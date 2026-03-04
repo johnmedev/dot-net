@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visual Studio Mobile Development</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --surface2: #1a1a24;
+    --border: #2a2a3a;
+    --accent: #5b4eff;
+    --accent2: #ff4e8b;
+    --accent3: #00e5c0;
+    --accent4: #ffa928;
+    --text: #e8e8f0;
+    --muted: #6b6b88;
+    --code-bg: #0d0d16;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* Hero */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 80px 8vw;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -200px; right: -200px;
+    width: 700px; height: 700px;
+    background: radial-gradient(circle, rgba(91,78,255,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: -100px; left: -100px;
+    width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(255,78,139,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.3em;
+    color: var(--accent3);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    opacity: 0;
+    animation: fadeUp 0.6s ease forwards 0.2s;
+  }
+
+  .hero h1 {
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.03em;
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards 0.4s;
+  }
+
+  .hero h1 span {
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero-desc {
+    font-size: 1.1rem;
+    color: var(--muted);
+    max-width: 540px;
+    line-height: 1.7;
+    margin-bottom: 48px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards 0.6s;
+  }
+
+  .hero-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards 0.8s;
+  }
+
+  .hero-nav a {
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-family: 'IBM Plex Mono', monospace;
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+
+  .hero-nav a:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: rgba(91,78,255,0.08);
+  }
+
+  .scroll-indicator {
+    position: absolute;
+    bottom: 40px;
+    left: 8vw;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    opacity: 0;
+    animation: fadeUp 0.7s ease forwards 1.2s;
+  }
+
+  .scroll-line {
+    width: 40px;
+    height: 1px;
+    background: var(--muted);
+    animation: expandLine 1.5s ease infinite;
+  }
+
+  /* Main content */
+  main { padding: 0 8vw; max-width: 1400px; margin: 0 auto; }
+
+  /* Section styles */
+  section {
+    padding: 80px 0;
+    border-top: 1px solid var(--border);
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+
+  section.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .section-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--accent3);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+    line-height: 1.1;
+  }
+
+  .section-desc {
+    color: var(--muted);
+    font-size: 1rem;
+    line-height: 1.7;
+    max-width: 600px;
+    margin-bottom: 48px;
+  }
+
+  /* Workload section */
+  .workload-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+
+  .workload-item {
+    background: var(--surface);
+    padding: 32px;
+    transition: background 0.2s;
+    position: relative;
+  }
+
+  .workload-item:hover { background: var(--surface2); }
+
+  .workload-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .workload-item h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: -0.01em;
+  }
+
+  .workload-item p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* Structure tree */
+  .file-tree {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+  }
+
+  .file-tree-header {
+    background: var(--surface2);
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-r { background: #ff5f57; }
+  .dot-y { background: #febc2e; }
+  .dot-g { background: #28c840; }
+
+  .file-tree-title {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  .file-tree-body { padding: 24px; line-height: 2; }
+
+  .tree-folder { color: var(--accent4); }
+  .tree-file { color: var(--text); }
+  .tree-comment { color: var(--muted); }
+  .tree-indent { padding-left: 20px; }
+  .tree-indent2 { padding-left: 40px; }
+
+  /* Code blocks */
+  .code-block {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .code-header {
+    background: var(--surface2);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .code-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent3);
+    letter-spacing: 0.05em;
+  }
+
+  .code-lang {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: var(--border);
+    padding: 2px 8px;
+    border-radius: 3px;
+  }
+
+  .code-body {
+    padding: 24px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.8;
+    overflow-x: auto;
+  }
+
+  .kw { color: #c792ea; }
+  .str { color: #c3e88d; }
+  .type { color: #82aaff; }
+  .fn { color: #82aaff; }
+  .comment { color: #546e7a; font-style: italic; }
+  .num { color: #f78c6c; }
+  .prop { color: #ffcb6b; }
+  .op { color: var(--accent2); }
+
+  /* Language cards */
+  .lang-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .lang-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .lang-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--accent);
+  }
+
+  .lang-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+
+  .lang-card.cs::before { background: var(--accent); }
+  .lang-card.xaml::before { background: var(--accent2); }
+  .lang-card.xml::before { background: var(--accent4); }
+  .lang-card.json::before { background: var(--accent3); }
+  .lang-card.sql::before { background: #ff8a65; }
+
+  .lang-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    letter-spacing: 0.05em;
+  }
+
+  .lang-card.cs .lang-name { color: var(--accent); }
+  .lang-card.xaml .lang-name { color: var(--accent2); }
+  .lang-card.xml .lang-name { color: var(--accent4); }
+  .lang-card.json .lang-name { color: var(--accent3); }
+  .lang-card.sql .lang-name { color: #ff8a65; }
+
+  .lang-use {
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Class cards */
+  .class-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .tab-btn {
+    padding: 8px 16px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .tab-btn.active, .tab-btn:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* MVVM diagram */
+  .mvvm-diagram {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr auto 1fr;
+    align-items: center;
+    gap: 0;
+    margin-bottom: 40px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .mvvm-box {
+    padding: 32px 24px;
+    text-align: center;
+  }
+
+  .mvvm-box h3 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .mvvm-box p {
+    font-size: 0.78rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  .mvvm-box.view h3 { color: var(--accent2); }
+  .mvvm-box.viewmodel h3 { color: var(--accent); }
+  .mvvm-box.model h3 { color: var(--accent3); }
+
+  .mvvm-arrow {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--muted);
+    font-size: 0.7rem;
+    text-align: center;
+    padding: 16px;
+  }
+
+  /* Flow section */
+  .flow-steps {
+    position: relative;
+    padding-left: 40px;
+  }
+
+  .flow-steps::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: linear-gradient(to bottom, var(--accent), var(--accent2), var(--accent3));
+  }
+
+  .flow-step {
+    position: relative;
+    margin-bottom: 32px;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+  }
+
+  .flow-step.visible {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .flow-step::before {
+    content: '';
+    position: absolute;
+    left: -34px;
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent);
+  }
+
+  .flow-step h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .flow-step p {
+    font-size: 0.85rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* Table */
+  .styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+    margin-bottom: 40px;
+  }
+
+  .styled-table th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 12px 20px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .styled-table td {
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(42,42,58,0.5);
+    vertical-align: top;
+  }
+
+  .styled-table tr:hover td { background: var(--surface2); }
+
+  .styled-table td:first-child {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--accent3);
+  }
+
+  td.platform-android { color: #78c257 !important; }
+  td.platform-ios { color: #c8c8cc !important; }
+  td.platform-both { color: var(--accent4) !important; }
+
+  /* Tag badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-purple { background: rgba(91,78,255,0.2); color: var(--accent); }
+  .badge-pink { background: rgba(255,78,139,0.2); color: var(--accent2); }
+  .badge-green { background: rgba(0,229,192,0.2); color: var(--accent3); }
+  .badge-yellow { background: rgba(255,169,40,0.2); color: var(--accent4); }
+
+  /* Footer */
+  footer {
+    margin-top: 80px;
+    padding: 48px 8vw;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: gap;
+  }
+
+  footer p {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+  }
+
+  footer span { color: var(--accent2); }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes expandLine {
+    0%, 100% { transform: scaleX(1); opacity: 0.5; }
+    50% { transform: scaleX(1.5); opacity: 1; }
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .mvvm-diagram {
+      grid-template-columns: 1fr;
+    }
+    .mvvm-arrow { transform: rotate(90deg); padding: 4px; }
+    .hero { padding: 60px 6vw; }
+    main { padding: 0 6vw; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero" style="border:none; opacity:1; transform:none;">
+  <div class="hero-label">// Visual Studio Guide</div>
+  <h1>Mobile Dev<br>with <span>.NET</span></h1>
+  <p class="hero-desc">A complete reference for understanding Visual Studio mobile app development — workloads, project structure, languages, types, classes, and architecture patterns.</p>
+  <nav class="hero-nav">
+    <a href="#workloads">Workloads</a>
+    <a href="#structure">Structure</a>
+    <a href="#forms">Forms & MAUI</a>
+    <a href="#languages">Languages</a>
+    <a href="#classes">Classes & Types</a>
+    <a href="#mvvm">MVVM</a>
+    <a href="#flow">How It Works</a>
+  </nav>
+  <div class="scroll-indicator">
+    <div class="scroll-line"></div>
+    scroll to explore
+  </div>
+</section>
+
+<main>
+
+  <!-- WORKLOADS -->
+  <section id="workloads">
+    <div class="section-label">// 01 — Workloads</div>
+    <h2 class="section-title">What is a<br>Workload?</h2>
+    <p class="section-desc">A workload is a pre-packaged bundle of tools, SDKs, libraries, and templates installed into Visual Studio to support a specific development scenario. For mobile, the key workload is <strong>"Mobile development with .NET"</strong>.</p>
+
+    <div class="workload-grid">
+      <div class="workload-item">
+        <div class="workload-icon" style="background:rgba(91,78,255,0.15)">📦</div>
+        <h3>Android SDK & Emulator</h3>
+        <p>Full Android toolchain including build tools, platform SDK, and AVD emulator for testing on virtual devices.</p>
+      </div>
+      <div class="workload-item">
+        <div class="workload-icon" style="background:rgba(255,78,139,0.15)">🍎</div>
+        <h3>iOS Build Tools</h3>
+        <p>Xamarin.iOS / MAUI iOS support. Requires a connected Mac or Mac build host to compile iOS apps.</p>
+      </div>
+      <div class="workload-item">
+        <div class="workload-icon" style="background:rgba(0,229,192,0.15)">🧩</div>
+        <h3>.NET MAUI Templates</h3>
+        <p>Project templates, item templates, and scaffolding for cross-platform mobile and desktop apps.</p>
+      </div>
+      <div class="workload-item">
+        <div class="workload-icon" style="background:rgba(255,169,40,0.15)">📡</div>
+        <h3>NuGet & Dependencies</h3>
+        <p>Package manager integration with thousands of mobile-ready libraries pre-configured for cross-platform use.</p>
+      </div>
+      <div class="workload-item">
+        <div class="workload-icon" style="background:rgba(91,78,255,0.15)">🖥️</div>
+        <h3>Device Simulators</h3>
+        <p>Android Virtual Devices (AVD) and iOS Simulator support for running apps without a physical device.</p>
+      </div>
+      <div class="workload-item">
+        <div class="workload-icon" style="background:rgba(255,78,139,0.15)">🔧</div>
+        <h3>Hot Reload & Debug</h3>
+        <p>XAML Hot Reload and .NET Hot Reload allow live UI changes without restarting the app during development.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROJECT STRUCTURE -->
+  <section id="structure">
+    <div class="section-label">// 02 — Project Structure</div>
+    <h2 class="section-title">Folder &<br>File Structure</h2>
+    <p class="section-desc">A .NET MAUI project shares most code across platforms in a single project. Platform-specific folders contain only what's unique to each OS.</p>
+
+    <div class="file-tree">
+      <div class="file-tree-header">
+        <div class="dot dot-r"></div>
+        <div class="dot dot-y"></div>
+        <div class="dot dot-g"></div>
+        <span class="file-tree-title">MyMobileApp.sln</span>
+      </div>
+      <div class="file-tree-body">
+        <div><span class="tree-folder">📁 MyMobileApp/</span> <span class="tree-comment">← Shared cross-platform code</span></div>
+        <div class="tree-indent"><span class="tree-folder">📁 Models/</span> <span class="tree-comment">← Data classes (Product, User…)</span></div>
+        <div class="tree-indent"><span class="tree-folder">📁 ViewModels/</span> <span class="tree-comment">← Business logic, commands, state</span></div>
+        <div class="tree-indent"><span class="tree-folder">📁 Views/</span> <span class="tree-comment">← XAML pages / screens</span></div>
+        <div class="tree-indent"><span class="tree-folder">📁 Services/</span> <span class="tree-comment">← API calls, database, auth</span></div>
+        <div class="tree-indent"><span class="tree-folder">📁 Resources/</span> <span class="tree-comment">← Fonts, images, styles</span></div>
+        <div class="tree-indent"><span class="tree-file">📄 App.xaml</span> <span class="tree-comment">← App entry point & global resources</span></div>
+        <div class="tree-indent"><span class="tree-file">📄 App.xaml.cs</span> <span class="tree-comment">← App startup logic (C#)</span></div>
+        <div class="tree-indent"><span class="tree-file">📄 AppShell.xaml</span> <span class="tree-comment">← Navigation routes & shell</span></div>
+        <div class="tree-indent"><span class="tree-file">📄 MainPage.xaml</span> <span class="tree-comment">← First screen UI layout</span></div>
+        <div class="tree-indent"><span class="tree-file">📄 MainPage.xaml.cs</span> <span class="tree-comment">← Code-behind (C# logic)</span></div>
+        <div class="tree-indent"><span class="tree-file">📄 MauiProgram.cs</span> <span class="tree-comment">← DI, services registration</span></div>
+        <br>
+        <div><span class="tree-folder">📁 Platforms/</span> <span class="tree-comment">← Platform-specific code</span></div>
+        <div class="tree-indent"><span class="tree-folder">📁 Android/</span></div>
+        <div class="tree-indent2"><span class="tree-file">📄 MainActivity.cs</span> <span class="tree-comment">← Android entry point</span></div>
+        <div class="tree-indent2"><span class="tree-file">📄 AndroidManifest.xml</span> <span class="tree-comment">← Permissions & config</span></div>
+        <div class="tree-indent"><span class="tree-folder">📁 iOS/</span></div>
+        <div class="tree-indent2"><span class="tree-file">📄 AppDelegate.cs</span> <span class="tree-comment">← iOS entry point</span></div>
+        <div class="tree-indent2"><span class="tree-file">📄 Info.plist</span> <span class="tree-comment">← iOS app config</span></div>
+        <div class="tree-indent"><span class="tree-folder">📁 Windows/</span> <span class="tree-comment">← WinUI support (optional)</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FORMS & MAUI -->
+  <section id="forms">
+    <div class="section-label">// 03 — Forms & MAUI</div>
+    <h2 class="section-title">What are<br>Forms & MAUI?</h2>
+    <p class="section-desc">Xamarin.Forms (older) and .NET MAUI (modern) are cross-platform UI frameworks. You write one UI in XAML and MAUI converts it into native controls on each platform.</p>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:32px;">
+      <div style="background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:28px;">
+        <div style="color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:0.75rem; margin-bottom:12px;">OLDER</div>
+        <h3 style="font-size:1.3rem; font-weight:800; margin-bottom:8px; color:var(--muted);">Xamarin.Forms</h3>
+        <p style="font-size:0.85rem; color:var(--muted); line-height:1.6;">Separate Android/iOS projects. Still supported but in maintenance mode. Being replaced by MAUI.</p>
+      </div>
+      <div style="background:var(--surface2); border:1px solid var(--accent); border-radius:8px; padding:28px;">
+        <div style="color:var(--accent3); font-family:'IBM Plex Mono',monospace; font-size:0.75rem; margin-bottom:12px;">MODERN ✓</div>
+        <h3 style="font-size:1.3rem; font-weight:800; margin-bottom:8px; color:var(--accent);">.NET MAUI</h3>
+        <p style="font-size:0.85rem; color:var(--muted); line-height:1.6;">Single project targeting Android, iOS, macOS & Windows. Evolved successor to Xamarin.Forms.</p>
+      </div>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-title">How XAML becomes native UI</span>
+        <span class="code-lang">XAML → Native</span>
+      </div>
+      <div class="code-body">
+<span class="comment">// You write once in XAML:</span>
+&lt;<span class="type">Button</span> <span class="prop">Text</span>=<span class="str">"Click Me"</span> <span class="prop">BackgroundColor</span>=<span class="str">"Blue"</span> /&gt;
+
+<span class="comment">// .NET MAUI converts it to:</span>
+<span class="comment">// Android  →  android.widget.Button</span>
+<span class="comment">// iOS      →  UIButton (UIKit)</span>
+<span class="comment">// Windows  →  WinUI Button</span>
+<span class="comment">// macOS    →  NSButton (AppKit)</span>
+
+<span class="comment">// One codebase → Real native controls on every platform</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- LANGUAGES -->
+  <section id="languages">
+    <div class="section-label">// 04 — Languages</div>
+    <h2 class="section-title">Languages<br>& Their Roles</h2>
+    <p class="section-desc">Mobile development with Visual Studio primarily uses C# and XAML, with supporting languages for configuration and data handling.</p>
+
+    <div class="lang-grid">
+      <div class="lang-card cs">
+        <div class="lang-name">C#</div>
+        <div class="lang-use">All app logic, models, services, ViewModels, commands, data binding, API calls. The primary language — everything runs through it.</div>
+      </div>
+      <div class="lang-card xaml">
+        <div class="lang-name">XAML</div>
+        <div class="lang-use">UI layout and design. Like HTML for apps — defines pages, buttons, labels, layouts, styles, and data binding expressions.</div>
+      </div>
+      <div class="lang-card xml">
+        <div class="lang-name">XML</div>
+        <div class="lang-use">Platform configuration files: AndroidManifest.xml (permissions), Info.plist (iOS settings), NuGet package configs.</div>
+      </div>
+      <div class="lang-card json">
+        <div class="lang-name">JSON</div>
+        <div class="lang-use">API response data, appsettings.json for environment config, launchSettings.json for debug profiles.</div>
+      </div>
+      <div class="lang-card sql">
+        <div class="lang-name">SQL</div>
+        <div class="lang-use">Local SQLite database queries for offline storage, caching, and persisting user data on the device.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLASSES & TYPES -->
+  <section id="classes">
+    <div class="section-label">// 05 — Classes & Types</div>
+    <h2 class="section-title">Key Classes<br>& Types</h2>
+    <p class="section-desc">Each class serves a specific architectural role. Click a tab to see the code and explanation.</p>
+
+    <div class="class-tabs">
+      <button class="tab-btn active" onclick="switchTab('app')">Application</button>
+      <button class="tab-btn" onclick="switchTab('page')">ContentPage</button>
+      <button class="tab-btn" onclick="switchTab('viewmodel')">ViewModel</button>
+      <button class="tab-btn" onclick="switchTab('model')">Model</button>
+      <button class="tab-btn" onclick="switchTab('service')">Service</button>
+      <button class="tab-btn" onclick="switchTab('program')">MauiProgram</button>
+    </div>
+
+    <div id="tab-app" class="tab-content active">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-title">App.xaml.cs — Application entry point</span>
+          <span class="code-lang">C#</span>
+        </div>
+        <div class="code-body">
+<span class="kw">public partial class</span> <span class="type">App</span> : <span class="type">Application</span>
+{
+    <span class="kw">public</span> <span class="fn">App</span>()
+    {
+        <span class="fn">InitializeComponent</span>();
+        <span class="comment">// Set the first screen of your app</span>
+        MainPage = <span class="kw">new</span> <span class="type">AppShell</span>();
+    }
+
+    <span class="kw">protected override void</span> <span class="fn">OnStart</span>()
+    {
+        <span class="comment">// Called when app first launches</span>
+    }
+
+    <span class="kw">protected override void</span> <span class="fn">OnSleep</span>()
+    {
+        <span class="comment">// Called when app goes to background</span>
+    }
+}
+        </div>
+      </div>
+      <p style="font-size:0.88rem; color:var(--muted); line-height:1.7;">The <strong style="color:var(--text)">Application</strong> class is the root of your app. It controls global resources, startup logic, and lifecycle events (start, sleep, resume). Every app has exactly one.</p>
+    </div>
+
+    <div id="tab-page" class="tab-content">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-title">MainPage.xaml.cs — A screen/page</span>
+          <span class="code-lang">C#</span>
+        </div>
+        <div class="code-body">
+<span class="kw">public partial class</span> <span class="type">MainPage</span> : <span class="type">ContentPage</span>
+{
+    <span class="kw">private readonly</span> <span class="type">MainViewModel</span> _viewModel;
+
+    <span class="kw">public</span> <span class="fn">MainPage</span>(<span class="type">MainViewModel</span> viewModel)
+    {
+        <span class="fn">InitializeComponent</span>();
+        _viewModel = viewModel;
+        BindingContext = _viewModel; <span class="comment">// Connect VM to UI</span>
+    }
+
+    <span class="kw">protected override async void</span> <span class="fn">OnAppearing</span>()
+    {
+        <span class="kw">base</span>.<span class="fn">OnAppearing</span>();
+        <span class="kw">await</span> _viewModel.<span class="fn">LoadDataAsync</span>();
+    }
+}
+        </div>
+      </div>
+      <p style="font-size:0.88rem; color:var(--muted); line-height:1.7;"><strong style="color:var(--text)">ContentPage</strong> represents a single screen in your app. The <code style="color:var(--accent3)">BindingContext</code> links the page to its ViewModel, enabling automatic data binding between UI and logic.</p>
+    </div>
+
+    <div id="tab-viewmodel" class="tab-content">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-title">MainViewModel.cs — Business logic & state</span>
+          <span class="code-lang">C#</span>
+        </div>
+        <div class="code-body">
+<span class="kw">public class</span> <span class="type">MainViewModel</span> : <span class="type">INotifyPropertyChanged</span>
+{
+    <span class="kw">private string</span> _title = <span class="str">"Loading..."</span>;
+    <span class="kw">public string</span> Title {
+        <span class="kw">get</span> => _title;
+        <span class="kw">set</span> { _title = value; <span class="fn">OnPropertyChanged</span>(); }
+    }
+
+    <span class="kw">private</span> <span class="type">ObservableCollection</span>&lt;<span class="type">Product</span>&gt; _products = <span class="kw">new</span>();
+    <span class="kw">public</span> <span class="type">ObservableCollection</span>&lt;<span class="type">Product</span>&gt; Products {
+        <span class="kw">get</span> => _products;
+        <span class="kw">set</span> { _products = value; <span class="fn">OnPropertyChanged</span>(); }
+    }
+
+    <span class="kw">public</span> <span class="type">ICommand</span> LoadCommand { <span class="kw">get</span>; }
+
+    <span class="kw">public</span> <span class="fn">MainViewModel</span>(<span class="type">ApiService</span> apiService)
+    {
+        LoadCommand = <span class="kw">new</span> <span class="type">Command</span>(<span class="kw">async</span> () => <span class="kw">await</span> <span class="fn">LoadDataAsync</span>());
+    }
+
+    <span class="kw">public async</span> <span class="type">Task</span> <span class="fn">LoadDataAsync</span>()
+    {
+        Title = <span class="str">"Products"</span>;
+        <span class="kw">var</span> data = <span class="kw">await</span> _apiService.<span class="fn">GetProductsAsync</span>();
+        Products = <span class="kw">new</span> <span class="type">ObservableCollection</span>&lt;<span class="type">Product</span>&gt;(data);
+    }
+}
+        </div>
+      </div>
+      <p style="font-size:0.88rem; color:var(--muted); line-height:1.7;"><strong style="color:var(--text)">ViewModel</strong> holds all state and logic for a screen. <code style="color:var(--accent3)">INotifyPropertyChanged</code> tells the UI to update when data changes. <code style="color:var(--accent3)">ICommand</code> exposes actions that XAML buttons can trigger.</p>
+    </div>
+
+    <div id="tab-model" class="tab-content">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-title">Product.cs — Data model</span>
+          <span class="code-lang">C#</span>
+        </div>
+        <div class="code-body">
+<span class="kw">public class</span> <span class="type">Product</span>
+{
+    <span class="kw">public int</span>     Id          { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public string</span>  Name        { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public decimal</span> Price       { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public string</span>  ImageUrl    { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public bool</span>    InStock     { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public</span> <span class="type">DateTime</span> CreatedAt  { <span class="kw">get</span>; <span class="kw">set</span>; }
+}
+
+<span class="comment">// Used with SQLite for local storage:</span>
+[<span class="type">Table</span>(<span class="str">"products"</span>)]
+<span class="kw">public class</span> <span class="type">ProductEntity</span>
+{
+    [<span class="type">PrimaryKey</span>, <span class="type">AutoIncrement</span>]
+    <span class="kw">public int</span> Id { <span class="kw">get</span>; <span class="kw">set</span>; }
+    <span class="kw">public string</span> Name { <span class="kw">get</span>; <span class="kw">set</span>; }
+}
+        </div>
+      </div>
+      <p style="font-size:0.88rem; color:var(--muted); line-height:1.7;"><strong style="color:var(--text)">Models</strong> are pure data containers — no logic, just properties. They represent data from your API or database and are passed between layers of the app.</p>
+    </div>
+
+    <div id="tab-service" class="tab-content">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-title">ApiService.cs — External data fetching</span>
+          <span class="code-lang">C#</span>
+        </div>
+        <div class="code-body">
+<span class="kw">public class</span> <span class="type">ApiService</span>
+{
+    <span class="kw">private readonly</span> <span class="type">HttpClient</span> _http;
+
+    <span class="kw">public</span> <span class="fn">ApiService</span>(<span class="type">HttpClient</span> http)
+    {
+        _http = http;
+        _http.BaseAddress = <span class="kw">new</span> <span class="type">Uri</span>(<span class="str">"https://api.example.com/"</span>);
+    }
+
+    <span class="kw">public async</span> <span class="type">Task</span>&lt;<span class="type">List</span>&lt;<span class="type">Product</span>&gt;&gt; <span class="fn">GetProductsAsync</span>()
+    {
+        <span class="kw">var</span> json = <span class="kw">await</span> _http.<span class="fn">GetStringAsync</span>(<span class="str">"products"</span>);
+        <span class="kw">return</span> <span class="type">JsonSerializer</span>.<span class="fn">Deserialize</span>&lt;<span class="type">List</span>&lt;<span class="type">Product</span>&gt;&gt;(json);
+    }
+
+    <span class="kw">public async</span> <span class="type">Task</span>&lt;<span class="type">Product</span>&gt; <span class="fn">GetProductAsync</span>(<span class="kw">int</span> id)
+    {
+        <span class="kw">var</span> json = <span class="kw">await</span> _http.<span class="fn">GetStringAsync</span>(<span class="str">$"products/{id}"</span>);
+        <span class="kw">return</span> <span class="type">JsonSerializer</span>.<span class="fn">Deserialize</span>&lt;<span class="type">Product</span>&gt;(json);
+    }
+}
+        </div>
+      </div>
+      <p style="font-size:0.88rem; color:var(--muted); line-height:1.7;"><strong style="color:var(--text)">Services</strong> handle external communication — REST APIs, SQLite databases, authentication, file I/O. They're injected into ViewModels via dependency injection.</p>
+    </div>
+
+    <div id="tab-program" class="tab-content">
+      <div class="code-block">
+        <div class="code-header">
+          <span class="code-title">MauiProgram.cs — App bootstrap & DI</span>
+          <span class="code-lang">C#</span>
+        </div>
+        <div class="code-body">
+<span class="kw">public static class</span> <span class="type">MauiProgram</span>
+{
+    <span class="kw">public static</span> <span class="type">MauiApp</span> <span class="fn">CreateMauiApp</span>()
+    {
+        <span class="kw">var</span> builder = <span class="type">MauiApp</span>.<span class="fn">CreateBuilder</span>();
+
+        builder
+            .<span class="fn">UseMauiApp</span>&lt;<span class="type">App</span>&gt;()
+            .<span class="fn">ConfigureFonts</span>(fonts => {
+                fonts.<span class="fn">AddFont</span>(<span class="str">"OpenSans.ttf"</span>, <span class="str">"OpenSansRegular"</span>);
+            });
+
+        <span class="comment">// Register services (Dependency Injection)</span>
+        builder.Services.<span class="fn">AddSingleton</span>&lt;<span class="type">ApiService</span>&gt;();
+        builder.Services.<span class="fn">AddSingleton</span>&lt;<span class="type">DatabaseService</span>&gt;();
+
+        <span class="comment">// Register pages & ViewModels</span>
+        builder.Services.<span class="fn">AddTransient</span>&lt;<span class="type">MainPage</span>&gt;();
+        builder.Services.<span class="fn">AddTransient</span>&lt;<span class="type">MainViewModel</span>&gt;();
+
+        <span class="kw">return</span> builder.<span class="fn">Build</span>();
+    }
+}
+        </div>
+      </div>
+      <p style="font-size:0.88rem; color:var(--muted); line-height:1.7;"><strong style="color:var(--text)">MauiProgram</strong> is the bootstrap file — runs before anything else. It configures the dependency injection container, registers services, fonts, handlers, and builds the app.</p>
+    </div>
+  </section>
+
+  <!-- MVVM -->
+  <section id="mvvm">
+    <div class="section-label">// 06 — Architecture</div>
+    <h2 class="section-title">MVVM<br>Pattern</h2>
+    <p class="section-desc">Model-View-ViewModel is the standard architecture for .NET MAUI apps. It separates concerns, making code testable, maintainable, and scalable.</p>
+
+    <div class="mvvm-diagram">
+      <div class="mvvm-box view">
+        <h3>VIEW</h3>
+        <p>XAML pages and controls. Shows data to the user, captures input. Has no business logic.</p>
+        <br>
+        <span class="badge badge-pink">MainPage.xaml</span>
+      </div>
+      <div class="mvvm-arrow">⟵ Data Binding ⟶</div>
+      <div class="mvvm-box viewmodel" style="background:var(--surface2)">
+        <h3>VIEWMODEL</h3>
+        <p>Holds state & logic. Exposes Properties and Commands. Notifies View of changes via INotifyPropertyChanged.</p>
+        <br>
+        <span class="badge badge-purple">MainViewModel.cs</span>
+      </div>
+      <div class="mvvm-arrow">⟵ Calls / Returns ⟶</div>
+      <div class="mvvm-box model">
+        <h3>MODEL</h3>
+        <p>Pure data. No logic. Represents API responses, database records, or domain entities.</p>
+        <br>
+        <span class="badge badge-green">Product.cs</span>
+      </div>
+    </div>
+
+    <table class="styled-table">
+      <thead>
+        <tr>
+          <th>Layer</th>
+          <th>Knows About</th>
+          <th>Does NOT Know About</th>
+          <th>Example Files</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>View</td>
+          <td>ViewModel (via BindingContext)</td>
+          <td>Model, Services</td>
+          <td><span class="badge badge-pink">*.xaml / *.xaml.cs</span></td>
+        </tr>
+        <tr>
+          <td>ViewModel</td>
+          <td>Model, Services</td>
+          <td>View (no UI references)</td>
+          <td><span class="badge badge-purple">*ViewModel.cs</span></td>
+        </tr>
+        <tr>
+          <td>Model</td>
+          <td>Nothing else</td>
+          <td>View, ViewModel, Services</td>
+          <td><span class="badge badge-green">*.cs (in Models/)</span></td>
+        </tr>
+        <tr>
+          <td>Service</td>
+          <td>Model, HTTP, DB</td>
+          <td>View, ViewModel</td>
+          <td><span class="badge badge-yellow">*Service.cs</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- HOW IT WORKS / FLOW -->
+  <section id="flow">
+    <div class="section-label">// 07 — Execution Flow</div>
+    <h2 class="section-title">How It All<br>Works Together</h2>
+    <p class="section-desc">From app launch to a user seeing data on screen — here's the complete execution flow in a .NET MAUI application.</p>
+
+    <div class="flow-steps">
+      <div class="flow-step">
+        <h3>1. App Launches on Device</h3>
+        <p>The OS starts the app. On Android this calls <code style="color:var(--accent3)">MainActivity.cs</code>, on iOS it calls <code style="color:var(--accent3)">AppDelegate.cs</code>. Both immediately hand control to .NET MAUI.</p>
+      </div>
+      <div class="flow-step">
+        <h3>2. MauiProgram.cs Runs</h3>
+        <p>The DI container is built. Services like <code style="color:var(--accent3)">ApiService</code> and <code style="color:var(--accent3)">DatabaseService</code> are registered. Fonts and handlers are configured. The app is constructed.</p>
+      </div>
+      <div class="flow-step">
+        <h3>3. App.xaml.cs Sets MainPage</h3>
+        <p><code style="color:var(--accent3)">App.cs</code> runs and sets <code style="color:var(--accent3)">MainPage = new AppShell()</code>, which defines the navigation structure and first visible screen.</p>
+      </div>
+      <div class="flow-step">
+        <h3>4. AppShell Defines Navigation</h3>
+        <p>Routes are registered: <code style="color:var(--accent3)">//MainPage</code>, <code style="color:var(--accent3)">//DetailPage</code> etc. Shell handles tab bars, flyout menus, and URL-style navigation.</p>
+      </div>
+      <div class="flow-step">
+        <h3>5. MainPage XAML Renders</h3>
+        <p>XAML is parsed and native controls are created on the platform. Data bindings are established between the View and its ViewModel via <code style="color:var(--accent3)">BindingContext</code>.</p>
+      </div>
+      <div class="flow-step">
+        <h3>6. ViewModel Loads Data</h3>
+        <p><code style="color:var(--accent3)">OnAppearing()</code> fires, triggering <code style="color:var(--accent3)">LoadDataAsync()</code>. The ViewModel calls ApiService, which makes an HTTP request and returns typed Model objects.</p>
+      </div>
+      <div class="flow-step">
+        <h3>7. UI Auto-Updates via Binding</h3>
+        <p>When ViewModel sets <code style="color:var(--accent3)">Products = new ObservableCollection(...)</code>, <code style="color:var(--accent3)">INotifyPropertyChanged</code> fires, and the bound ListView/CollectionView automatically refreshes — no manual UI update code needed.</p>
+      </div>
+      <div class="flow-step">
+        <h3>8. User Interacts → Command Fires</h3>
+        <p>A button tap triggers an <code style="color:var(--accent3)">ICommand</code> in the ViewModel. The command runs business logic, updates state, and the cycle repeats — View always reflects the latest ViewModel state.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SUMMARY TABLE -->
+  <section>
+    <div class="section-label">// 08 — Summary</div>
+    <h2 class="section-title">Technology<br>Quick Reference</h2>
+    <p class="section-desc">The full stack of technologies involved in Visual Studio mobile development.</p>
+
+    <table class="styled-table">
+      <thead>
+        <tr><th>Technology</th><th>Role</th><th>Platform</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>.NET MAUI</td><td>Cross-platform UI framework</td><td><span class="badge badge-yellow">All</span></td></tr>
+        <tr><td>C#</td><td>Primary programming language</td><td><span class="badge badge-yellow">All</span></td></tr>
+        <tr><td>XAML</td><td>Declarative UI markup language</td><td><span class="badge badge-yellow">All</span></td></tr>
+        <tr><td>MVVM</td><td>Architectural design pattern</td><td><span class="badge badge-yellow">All</span></td></tr>
+        <tr><td>NuGet</td><td>Package/dependency manager</td><td><span class="badge badge-yellow">All</span></td></tr>
+        <tr><td>Android SDK</td><td>Android build tools & APIs</td><td><span class="badge badge-green" style="background:rgba(120,194,87,0.2);color:#78c257">Android</span></td></tr>
+        <tr><td>Xcode / Mac</td><td>Required for iOS compilation</td><td><span class="badge" style="background:rgba(200,200,204,0.15);color:#c8c8cc">iOS</span></td></tr>
+        <tr><td>SQLite-net</td><td>Local on-device database</td><td><span class="badge badge-yellow">All</span></td></tr>
+        <tr><td>HttpClient</td><td>REST API communication</td><td><span class="badge badge-yellow">All</span></td></tr>
+        <tr><td>Dependency Injection</td><td>Service registration & resolution</td><td><span class="badge badge-yellow">All</span></td></tr>
+        <tr><td>XAML Hot Reload</td><td>Live UI changes without restart</td><td><span class="badge badge-yellow">All</span></td></tr>
+        <tr><td>AppShell</td><td>Navigation & routing system</td><td><span class="badge badge-yellow">All</span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+</main>
+
+<footer>
+  <p>Visual Studio Mobile Development Guide</p>
+  <p>Built with <span>♥</span> using .NET MAUI & C#</p>
+</footer>
+
+<script>
+  // Tab switching
+  function switchTab(name) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // Scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        // Also trigger flow steps
+        entry.target.querySelectorAll('.flow-step').forEach((step, i) => {
+          setTimeout(() => step.classList.add('visible'), i * 100);
+        });
+      }
+    });
+  }, { threshold: 0.1 });
+
+  document.querySelectorAll('section').forEach(s => observer.observe(s));
+
+  // Observe flow steps individually too
+  const flowObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
+    });
+  }, { threshold: 0.2 });
+
+  document.querySelectorAll('.flow-step').forEach(s => flowObserver.observe(s));
+</script>
+</body>
+</html>
